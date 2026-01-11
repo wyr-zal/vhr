@@ -1,0 +1,1790 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "VHR人力资源管理系统API",
+    "description": "微人事（VHR）项目完整API接口文档，包含员工管理、薪资管理、系统管理等模块",
+    "version": "1.0.0",
+    "contact": {
+      "name": "江南一点雨",
+      "url": "http://www.javaboy.org"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8081",
+      "description": "本地开发环境"
+    }
+  ],
+  "tags": [
+    {"name": "认证管理", "description": "用户登录、登出、验证码等接口"},
+    {"name": "HR个人信息", "description": "当前登录HR的信息管理"},
+    {"name": "在线聊天", "description": "在线聊天相关接口"},
+    {"name": "系统配置", "description": "菜单等系统配置接口"},
+    {"name": "员工管理", "description": "员工信息的增删改查"},
+    {"name": "薪资账套", "description": "薪资账套的管理"},
+    {"name": "员工账套", "description": "员工薪资账套配置"},
+    {"name": "HR管理", "description": "HR用户管理"},
+    {"name": "部门管理", "description": "部门的增删改查"},
+    {"name": "职称管理", "description": "职称等级管理"},
+    {"name": "权限管理", "description": "角色和菜单权限管理"},
+    {"name": "职位管理", "description": "职位的增删改查"}
+  ],
+  "paths": {
+    "/doLogin": {
+      "post": {
+        "tags": ["认证管理"],
+        "summary": "用户登录",
+        "description": "使用用户名密码登录系统，需要携带验证码。登录成功后返回用户信息，系统使用Session维持登录状态",
+        "operationId": "doLogin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password", "code"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "用户名",
+                    "example": "admin"
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "密码",
+                    "example": "123"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "验证码",
+                    "example": "abcd"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBeanWithHr"},
+                "example": {
+                  "status": 200,
+                  "msg": "登录成功!",
+                  "obj": {
+                    "id": 3,
+                    "name": "系统管理员",
+                    "phone": "18568887789",
+                    "telephone": "029-82881234",
+                    "address": "深圳南山",
+                    "enabled": true,
+                    "username": "admin",
+                    "userface": "http://bbs.tiny.com/group1/M00/00/00/wKgAaV0Y0Z2APPDcAABMjf0FX7Y636.jpg",
+                    "remark": null,
+                    "roles": [{"id": 1, "name": "ROLE_admin", "nameZh": "系统管理员"}]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "登录失败",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 500, "msg": "用户名或者密码输入错误，请重新输入!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "get": {
+        "tags": ["认证管理"],
+        "summary": "登录状态检查",
+        "description": "检查用户是否已登录，未登录时返回提示信息",
+        "operationId": "checkLogin",
+        "responses": {
+          "200": {
+            "description": "未登录提示",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 500, "msg": "尚未登录，请登录!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verifyCode": {
+      "get": {
+        "tags": ["认证管理"],
+        "summary": "获取验证码",
+        "description": "获取图形验证码，返回验证码图片流。验证码存储在Session中",
+        "operationId": "getVerifyCode",
+        "responses": {
+          "200": {
+            "description": "验证码图片",
+            "content": {
+              "image/jpeg": {
+                "schema": {"type": "string", "format": "binary"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout": {
+      "post": {
+        "tags": ["认证管理"],
+        "summary": "用户登出",
+        "description": "退出登录，清除Session",
+        "operationId": "logout",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "登出成功",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "注销成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/info": {
+      "get": {
+        "tags": ["HR个人信息"],
+        "summary": "获取当前HR信息",
+        "description": "获取当前登录HR的详细信息",
+        "operationId": "getCurrentHr",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "成功获取HR信息",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/Hr"},
+                "example": {
+                  "id": 3,
+                  "name": "系统管理员",
+                  "phone": "18568887789",
+                  "telephone": "029-82881234",
+                  "address": "深圳南山",
+                  "enabled": true,
+                  "username": "admin",
+                  "userface": "http://bbs.tiny.com/group1/M00/00/00/wKgAaV0Y0Z2APPDcAABMjf0FX7Y636.jpg",
+                  "remark": null,
+                  "roles": [{"id": 1, "name": "ROLE_admin", "nameZh": "系统管理员"}]
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["HR个人信息"],
+        "summary": "更新当前HR信息",
+        "description": "更新当前登录HR的基本信息（姓名、电话、地址等）",
+        "operationId": "updateCurrentHr",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Hr"},
+              "example": {
+                "id": 3,
+                "name": "系统管理员",
+                "phone": "18568887789",
+                "telephone": "029-82881234",
+                "address": "深圳南山区"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/pass": {
+      "put": {
+        "tags": ["HR个人信息"],
+        "summary": "修改密码",
+        "description": "修改当前HR的登录密码",
+        "operationId": "updateHrPasswd",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["hrid", "oldpass", "pass"],
+                "properties": {
+                  "hrid": {"type": "integer", "description": "HR的ID", "example": 3},
+                  "oldpass": {"type": "string", "description": "旧密码", "example": "123"},
+                  "pass": {"type": "string", "description": "新密码", "example": "123456"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "修改结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/userface": {
+      "post": {
+        "tags": ["HR个人信息"],
+        "summary": "更新头像",
+        "description": "上传并更新HR头像（使用FastDFS存储）",
+        "operationId": "updateHrUserface",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file", "id"],
+                "properties": {
+                  "file": {"type": "string", "format": "binary", "description": "头像图片文件"},
+                  "id": {"type": "integer", "description": "HR的ID", "example": 3}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "上传结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": "http://192.168.91.132/group1/M00/00/00/xxx.jpg"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/hrs": {
+      "get": {
+        "tags": ["在线聊天"],
+        "summary": "获取HR列表（聊天用）",
+        "description": "获取所有HR列表，排除当前登录用户，用于在线聊天选择对象",
+        "operationId": "getChatHrs",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "HR列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/Hr"}
+                },
+                "example": [
+                  {"id": 5, "name": "李白", "username": "libai", "userface": "http://xxx.jpg"},
+                  {"id": 10, "name": "韩愈", "username": "hanyu", "userface": "http://xxx.jpg"}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/config/menu": {
+      "get": {
+        "tags": ["系统配置"],
+        "summary": "获取当前用户菜单",
+        "description": "根据当前登录用户的角色获取可访问的菜单列表",
+        "operationId": "getMenusByHrId",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "菜单列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/Menu"}
+                },
+                "example": [
+                  {
+                    "id": 2,
+                    "url": "/",
+                    "path": "/home",
+                    "component": "Home",
+                    "name": "员工资料",
+                    "iconCls": "fa fa-user-circle-o",
+                    "children": [
+                      {"id": 7, "url": "/employee/basic/**", "path": "/emp/basic", "component": "EmpBasic", "name": "基本资料"}
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "分页查询员工",
+        "description": "分页查询员工列表，支持按姓名、工号、部门等条件筛选",
+        "operationId": "getEmployeeByPage",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "page", "in": "query", "description": "页码，从1开始", "schema": {"type": "integer", "default": 1}, "example": 1},
+          {"name": "size", "in": "query", "description": "每页数量", "schema": {"type": "integer", "default": 10}, "example": 10},
+          {"name": "name", "in": "query", "description": "员工姓名（模糊查询）", "schema": {"type": "string"}, "example": "江南"},
+          {"name": "politicId", "in": "query", "description": "政治面貌ID", "schema": {"type": "integer"}, "example": 1},
+          {"name": "nationId", "in": "query", "description": "民族ID", "schema": {"type": "integer"}, "example": 1},
+          {"name": "posId", "in": "query", "description": "职位ID", "schema": {"type": "integer"}, "example": 29},
+          {"name": "jobLevelId", "in": "query", "description": "职称ID", "schema": {"type": "integer"}, "example": 9},
+          {"name": "engageForm", "in": "query", "description": "聘用形式（劳动合同/劳务合同）", "schema": {"type": "string"}, "example": "劳动合同"},
+          {"name": "departmentId", "in": "query", "description": "部门ID", "schema": {"type": "integer"}, "example": 78},
+          {"name": "beginDateScope", "in": "query", "description": "入职日期范围", "schema": {"type": "array", "items": {"type": "string", "format": "date"}}, "example": ["2018-01-01", "2020-12-31"]}
+        ],
+        "responses": {
+          "200": {
+            "description": "分页员工数据",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespPageBean"},
+                "example": {
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "江南一点雨",
+                      "gender": "男",
+                      "birthday": "1990-01-01",
+                      "idCard": "610122199001011234",
+                      "wedlock": "已婚",
+                      "nationId": 1,
+                      "nativePlace": "陕西",
+                      "politicId": 13,
+                      "email": "javaboy@qq.com",
+                      "phone": "18568887789",
+                      "address": "深圳市南山区",
+                      "departmentId": 78,
+                      "jobLevelId": 9,
+                      "posId": 29,
+                      "engageForm": "劳动合同",
+                      "tiptopDegree": "本科",
+                      "specialty": "计算机科学与技术",
+                      "school": "西安电子科技大学",
+                      "beginDate": "2018-01-01",
+                      "workState": "在职",
+                      "workID": "00000001",
+                      "contractTerm": 3.0,
+                      "conversionTime": "2018-04-01",
+                      "beginContract": "2018-01-01",
+                      "endContract": "2021-01-01",
+                      "workAge": 6,
+                      "nation": {"id": 1, "name": "汉族"},
+                      "politicsstatus": {"id": 13, "name": "群众"},
+                      "department": {"id": 78, "name": "技术部"},
+                      "jobLevel": {"id": 9, "name": "高级工程师"},
+                      "position": {"id": 29, "name": "技术总监"}
+                    }
+                  ],
+                  "total": 100
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["员工管理"],
+        "summary": "添加员工",
+        "description": "新增一条员工记录",
+        "operationId": "addEmployee",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Employee"},
+              "example": {
+                "name": "张三",
+                "gender": "男",
+                "birthday": "1995-06-15",
+                "idCard": "610122199506151234",
+                "wedlock": "未婚",
+                "nationId": 1,
+                "nativePlace": "陕西西安",
+                "politicId": 13,
+                "email": "zhangsan@qq.com",
+                "phone": "13812345678",
+                "address": "西安市雁塔区",
+                "departmentId": 78,
+                "jobLevelId": 12,
+                "posId": 30,
+                "engageForm": "劳动合同",
+                "tiptopDegree": "本科",
+                "specialty": "软件工程",
+                "school": "西安交通大学",
+                "beginDate": "2024-01-15",
+                "workState": "在职",
+                "workID": "00000102",
+                "contractTerm": 3.0,
+                "conversionTime": "2024-04-15",
+                "beginContract": "2024-01-15",
+                "endContract": "2027-01-15"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "添加成功!", "obj": null}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["员工管理"],
+        "summary": "更新员工",
+        "description": "更新员工信息",
+        "operationId": "updateEmployee",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Employee"},
+              "example": {
+                "id": 1,
+                "name": "江南一点雨",
+                "gender": "男",
+                "birthday": "1990-01-01",
+                "phone": "18568887780",
+                "email": "javaboy_updated@qq.com",
+                "address": "深圳市南山区科技园"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/{id}": {
+      "delete": {
+        "tags": ["员工管理"],
+        "summary": "删除员工",
+        "description": "根据ID删除员工",
+        "operationId": "deleteEmployeeById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "description": "员工ID", "schema": {"type": "integer"}, "example": 100}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/nations": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "获取所有民族",
+        "description": "获取系统中的所有民族列表（56个民族）",
+        "operationId": "getAllNations",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "民族列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Nation"}},
+                "example": [
+                  {"id": 1, "name": "汉族"},
+                  {"id": 2, "name": "蒙古族"},
+                  {"id": 3, "name": "回族"}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/politicsstatus": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "获取所有政治面貌",
+        "description": "获取系统中的所有政治面貌列表",
+        "operationId": "getAllPoliticsstatus",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "政治面貌列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Politicsstatus"}},
+                "example": [
+                  {"id": 1, "name": "中共党员"},
+                  {"id": 2, "name": "中共预备党员"},
+                  {"id": 3, "name": "共青团员"},
+                  {"id": 13, "name": "群众"}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/joblevels": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "获取所有职称",
+        "description": "获取系统中的所有职称等级列表",
+        "operationId": "getEmployeeJobLevels",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "职称列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/JobLevel"}},
+                "example": [
+                  {"id": 9, "name": "高级工程师", "titleLevel": "正高级"},
+                  {"id": 10, "name": "工程师", "titleLevel": "副高级"},
+                  {"id": 12, "name": "助理工程师", "titleLevel": "初级"}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/positions": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "获取所有职位",
+        "description": "获取系统中的所有职位列表",
+        "operationId": "getEmployeePositions",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "职位列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Position"}},
+                "example": [
+                  {"id": 29, "name": "技术总监", "createDate": "2018-01-11", "enabled": true},
+                  {"id": 30, "name": "研发工程师", "createDate": "2018-01-11", "enabled": true},
+                  {"id": 31, "name": "产品经理", "createDate": "2018-01-11", "enabled": true}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/maxWorkID": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "获取下一个工号",
+        "description": "获取当前最大工号+1，用于新增员工时自动填充工号",
+        "operationId": "getMaxWorkID",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "下一个工号",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": null, "obj": "00000102"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/deps": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "获取所有部门（树结构）",
+        "description": "获取所有部门，返回树形结构用于选择部门",
+        "operationId": "getEmployeeDepartments",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "部门树",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Department"}},
+                "example": [
+                  {
+                    "id": 1,
+                    "name": "股东会",
+                    "parentId": -1,
+                    "enabled": true,
+                    "children": [
+                      {
+                        "id": 4,
+                        "name": "董事会",
+                        "parentId": 1,
+                        "enabled": true,
+                        "children": [
+                          {"id": 5, "name": "总办", "parentId": 4, "enabled": true, "children": []}
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/export": {
+      "get": {
+        "tags": ["员工管理"],
+        "summary": "导出员工数据",
+        "description": "将员工数据导出为Excel文件",
+        "operationId": "exportEmployeeData",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Excel文件",
+            "content": {
+              "application/octet-stream": {
+                "schema": {"type": "string", "format": "binary"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/employee/basic/import": {
+      "post": {
+        "tags": ["员工管理"],
+        "summary": "导入员工数据",
+        "description": "从Excel文件批量导入员工数据",
+        "operationId": "importEmployeeData",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {"type": "string", "format": "binary", "description": "Excel文件(.xls或.xlsx)"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "导入结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "上传成功", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/salary/sob/": {
+      "get": {
+        "tags": ["薪资账套"],
+        "summary": "获取所有薪资账套",
+        "description": "获取系统中的所有薪资账套列表",
+        "operationId": "getAllSalaries",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "薪资账套列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Salary"}},
+                "example": [
+                  {
+                    "id": 10,
+                    "name": "研发部薪资账套",
+                    "basicSalary": 12000,
+                    "bonus": 5000,
+                    "lunchSalary": 800,
+                    "trafficSalary": 500,
+                    "allSalary": 18300,
+                    "pensionBase": 12000,
+                    "pensionPer": 0.07,
+                    "medicalBase": 12000,
+                    "medicalPer": 0.02,
+                    "accumulationFundBase": 12000,
+                    "accumulationFundPer": 0.12,
+                    "createDate": "2018-01-01"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["薪资账套"],
+        "summary": "添加薪资账套",
+        "description": "新增一个薪资账套",
+        "operationId": "addSalary",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Salary"},
+              "example": {
+                "name": "市场部薪资账套",
+                "basicSalary": 10000,
+                "bonus": 3000,
+                "lunchSalary": 600,
+                "trafficSalary": 400,
+                "pensionBase": 10000,
+                "pensionPer": 0.07,
+                "medicalBase": 10000,
+                "medicalPer": 0.02,
+                "accumulationFundBase": 10000,
+                "accumulationFundPer": 0.12
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "添加成功!", "obj": null}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["薪资账套"],
+        "summary": "更新薪资账套",
+        "description": "更新薪资账套信息",
+        "operationId": "updateSalary",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Salary"},
+              "example": {
+                "id": 10,
+                "name": "研发部薪资账套-升级版",
+                "basicSalary": 15000,
+                "bonus": 6000,
+                "lunchSalary": 1000,
+                "trafficSalary": 600
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/salary/sob/{id}": {
+      "delete": {
+        "tags": ["薪资账套"],
+        "summary": "删除薪资账套",
+        "description": "根据ID删除薪资账套",
+        "operationId": "deleteSalaryById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "description": "薪资账套ID", "schema": {"type": "integer"}, "example": 15}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功！", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/salary/sobcfg/": {
+      "get": {
+        "tags": ["员工账套"],
+        "summary": "分页查询员工薪资配置",
+        "description": "分页获取员工及其关联的薪资账套信息",
+        "operationId": "getEmployeeByPageWithSalary",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "page", "in": "query", "description": "页码", "schema": {"type": "integer", "default": 1}, "example": 1},
+          {"name": "size", "in": "query", "description": "每页数量", "schema": {"type": "integer", "default": 10}, "example": 10}
+        ],
+        "responses": {
+          "200": {
+            "description": "员工薪资配置列表",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespPageBean"},
+                "example": {
+                  "data": [
+                    {
+                      "id": 1,
+                      "name": "江南一点雨",
+                      "workID": "00000001",
+                      "department": {"id": 78, "name": "技术部"},
+                      "salary": {"id": 10, "name": "研发部薪资账套", "allSalary": 18300}
+                    }
+                  ],
+                  "total": 100
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["员工账套"],
+        "summary": "更新员工薪资账套",
+        "description": "为员工设置或更新薪资账套",
+        "operationId": "updateEmployeeSalaryById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "eid", "in": "query", "required": true, "description": "员工ID", "schema": {"type": "integer"}, "example": 1},
+          {"name": "sid", "in": "query", "required": true, "description": "薪资账套ID", "schema": {"type": "integer"}, "example": 10}
+        ],
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/salary/sobcfg/salaries": {
+      "get": {
+        "tags": ["员工账套"],
+        "summary": "获取薪资账套列表（配置用）",
+        "description": "获取所有薪资账套，用于员工薪资配置时选择",
+        "operationId": "getSobcfgSalaries",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "薪资账套列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Salary"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/hr/": {
+      "get": {
+        "tags": ["HR管理"],
+        "summary": "查询HR列表",
+        "description": "获取所有HR列表，支持按关键词搜索",
+        "operationId": "getAllHrs",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "keywords", "in": "query", "description": "搜索关键词（姓名或用户名）", "schema": {"type": "string"}, "example": "admin"}
+        ],
+        "responses": {
+          "200": {
+            "description": "HR列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Hr"}},
+                "example": [
+                  {
+                    "id": 3,
+                    "name": "系统管理员",
+                    "phone": "18568887789",
+                    "telephone": "029-82881234",
+                    "address": "深圳南山",
+                    "enabled": true,
+                    "username": "admin",
+                    "roles": [{"id": 1, "name": "ROLE_admin", "nameZh": "系统管理员"}]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["HR管理"],
+        "summary": "更新HR信息",
+        "description": "更新HR的基本信息",
+        "operationId": "updateHr",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Hr"},
+              "example": {
+                "id": 5,
+                "name": "李白白",
+                "phone": "13900000001",
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/hr/{id}": {
+      "delete": {
+        "tags": ["HR管理"],
+        "summary": "删除HR",
+        "description": "根据ID删除HR用户",
+        "operationId": "deleteHrById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "description": "HR的ID", "schema": {"type": "integer"}, "example": 12}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/hr/roles": {
+      "get": {
+        "tags": ["HR管理"],
+        "summary": "获取所有角色",
+        "description": "获取系统中的所有角色列表，用于给HR分配角色",
+        "operationId": "getHrRoles",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "角色列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Role"}},
+                "example": [
+                  {"id": 1, "name": "ROLE_admin", "nameZh": "系统管理员"},
+                  {"id": 2, "name": "ROLE_personnel", "nameZh": "人事专员"},
+                  {"id": 3, "name": "ROLE_recruiter", "nameZh": "招聘主管"}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/hr/role": {
+      "put": {
+        "tags": ["HR管理"],
+        "summary": "更新HR角色",
+        "description": "为HR设置角色（支持多角色）",
+        "operationId": "updateHrRole",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "hrid", "in": "query", "required": true, "description": "HR的ID", "schema": {"type": "integer"}, "example": 5},
+          {"name": "rids", "in": "query", "required": true, "description": "角色ID数组", "schema": {"type": "array", "items": {"type": "integer"}}, "example": [1, 2, 3]}
+        ],
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/department/": {
+      "get": {
+        "tags": ["部门管理"],
+        "summary": "获取部门树",
+        "description": "获取所有部门，以树形结构返回",
+        "operationId": "getDepartmentTree",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "部门树",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Department"}},
+                "example": [
+                  {
+                    "id": 1, "name": "股东会", "parentId": -1, "depPath": ".1", "enabled": true, "isParent": true,
+                    "children": [
+                      {"id": 4, "name": "董事会", "parentId": 1, "depPath": ".1.4", "enabled": true, "isParent": true, "children": []}
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["部门管理"],
+        "summary": "添加部门",
+        "description": "新增部门（通过存储过程处理），会自动设置depPath",
+        "operationId": "addDepartment",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Department"},
+              "example": {
+                "name": "新技术部",
+                "parentId": 78,
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBeanWithDepartment"},
+                "example": {
+                  "status": 200,
+                  "msg": "添加成功",
+                  "obj": {"id": 100, "name": "新技术部", "parentId": 78, "depPath": ".1.4.5.78.100", "enabled": true}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/department/{id}": {
+      "delete": {
+        "tags": ["部门管理"],
+        "summary": "删除部门",
+        "description": "删除部门（通过存储过程处理）。如果部门下有子部门或员工则无法删除",
+        "operationId": "deleteDepartmentById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "description": "部门ID", "schema": {"type": "integer"}, "example": 100}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "examples": {
+                  "success": {"value": {"status": 200, "msg": "删除成功", "obj": null}},
+                  "hasChildren": {"value": {"status": 500, "msg": "该部门下有子部门，删除失败", "obj": null}},
+                  "hasEmployee": {"value": {"status": 500, "msg": "该部门下有员工，删除失败", "obj": null}}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/joblevel/": {
+      "get": {
+        "tags": ["职称管理"],
+        "summary": "获取所有职称",
+        "description": "获取系统中的所有职称等级列表",
+        "operationId": "getAllJobLevels",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "职称列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/JobLevel"}},
+                "example": [
+                  {"id": 9, "name": "高级工程师", "titleLevel": "正高级", "createDate": "2018-01-11", "enabled": true},
+                  {"id": 10, "name": "工程师", "titleLevel": "副高级", "createDate": "2018-01-11", "enabled": true}
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["职称管理"],
+        "summary": "添加职称",
+        "description": "新增职称等级",
+        "operationId": "addJobLevel",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/JobLevel"},
+              "example": {
+                "name": "首席架构师",
+                "titleLevel": "正高级",
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "添加成功!", "obj": null}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["职称管理"],
+        "summary": "更新职称",
+        "description": "更新职称信息",
+        "operationId": "updateJobLevel",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/JobLevel"},
+              "example": {
+                "id": 9,
+                "name": "资深高级工程师",
+                "titleLevel": "正高级",
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["职称管理"],
+        "summary": "批量删除职称",
+        "description": "根据ID数组批量删除职称",
+        "operationId": "deleteJobLevelsByIds",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "ids", "in": "query", "required": true, "description": "职称ID数组", "schema": {"type": "array", "items": {"type": "integer"}}, "example": [15, 16, 17]}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/joblevel/{id}": {
+      "delete": {
+        "tags": ["职称管理"],
+        "summary": "删除职称",
+        "description": "根据ID删除单个职称",
+        "operationId": "deleteJobLevelById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "description": "职称ID", "schema": {"type": "integer"}, "example": 15}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/permiss/": {
+      "get": {
+        "tags": ["权限管理"],
+        "summary": "获取所有角色",
+        "description": "获取系统中的所有角色列表",
+        "operationId": "getPermissRoles",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "角色列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Role"}},
+                "example": [
+                  {"id": 1, "name": "ROLE_admin", "nameZh": "系统管理员"},
+                  {"id": 2, "name": "ROLE_personnel", "nameZh": "人事专员"}
+                ]
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["权限管理"],
+        "summary": "更新角色菜单权限",
+        "description": "为角色设置可访问的菜单",
+        "operationId": "updateMenuRole",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "rid", "in": "query", "required": true, "description": "角色ID", "schema": {"type": "integer"}, "example": 2},
+          {"name": "mids", "in": "query", "required": true, "description": "菜单ID数组", "schema": {"type": "array", "items": {"type": "integer"}}, "example": [1, 2, 7, 8, 9]}
+        ],
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/permiss/menus": {
+      "get": {
+        "tags": ["权限管理"],
+        "summary": "获取所有菜单",
+        "description": "获取系统中的所有菜单（树形结构）",
+        "operationId": "getAllMenus",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "菜单树",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Menu"}},
+                "example": [
+                  {
+                    "id": 1, "url": "/", "path": "/home", "component": "Home", "name": "所有",
+                    "children": [
+                      {"id": 2, "url": "/", "path": "/home", "name": "员工资料", "children": []}
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/permiss/mids/{rid}": {
+      "get": {
+        "tags": ["权限管理"],
+        "summary": "获取角色的菜单ID列表",
+        "description": "根据角色ID获取该角色拥有的所有菜单ID",
+        "operationId": "getMidsByRid",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "rid", "in": "path", "required": true, "description": "角色ID", "schema": {"type": "integer"}, "example": 1}
+        ],
+        "responses": {
+          "200": {
+            "description": "菜单ID列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"type": "integer"}},
+                "example": [1, 2, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/permiss/role": {
+      "post": {
+        "tags": ["权限管理"],
+        "summary": "添加角色",
+        "description": "新增角色",
+        "operationId": "addRole",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Role"},
+              "example": {
+                "name": "ROLE_test",
+                "nameZh": "测试角色"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "添加成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/permiss/role/{rid}": {
+      "delete": {
+        "tags": ["权限管理"],
+        "summary": "删除角色",
+        "description": "根据ID删除角色",
+        "operationId": "deleteRoleById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "rid", "in": "path", "required": true, "description": "角色ID", "schema": {"type": "integer"}, "example": 20}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/pos/": {
+      "get": {
+        "tags": ["职位管理"],
+        "summary": "获取所有职位",
+        "description": "获取系统中的所有职位列表",
+        "operationId": "getAllPositions",
+        "security": [{"cookieAuth": []}],
+        "responses": {
+          "200": {
+            "description": "职位列表",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/Position"}},
+                "example": [
+                  {"id": 29, "name": "技术总监", "createDate": "2018-01-11", "enabled": true},
+                  {"id": 30, "name": "研发工程师", "createDate": "2018-01-11", "enabled": true}
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["职位管理"],
+        "summary": "添加职位",
+        "description": "新增职位",
+        "operationId": "addPosition",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Position"},
+              "example": {
+                "name": "AI工程师",
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "添加成功!", "obj": null}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["职位管理"],
+        "summary": "更新职位",
+        "description": "更新职位信息",
+        "operationId": "updatePosition",
+        "security": [{"cookieAuth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/Position"},
+              "example": {
+                "id": 29,
+                "name": "CTO技术总监",
+                "enabled": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "更新成功!", "obj": null}
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["职位管理"],
+        "summary": "批量删除职位",
+        "description": "根据ID数组批量删除职位",
+        "operationId": "deletePositionsByIds",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "ids", "in": "query", "required": true, "description": "职位ID数组", "schema": {"type": "array", "items": {"type": "integer"}}, "example": [35, 36, 37]}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/basic/pos/{id}": {
+      "delete": {
+        "tags": ["职位管理"],
+        "summary": "删除职位",
+        "description": "根据ID删除单个职位",
+        "operationId": "deletePositionById",
+        "security": [{"cookieAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "description": "职位ID", "schema": {"type": "integer"}, "example": 35}
+        ],
+        "responses": {
+          "200": {
+            "description": "删除结果",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/RespBean"},
+                "example": {"status": 200, "msg": "删除成功!", "obj": null}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "JSESSIONID",
+        "description": "基于Session的认证，登录后自动携带JSESSIONID Cookie"
+      }
+    },
+    "schemas": {
+      "RespBean": {
+        "type": "object",
+        "description": "统一响应对象",
+        "properties": {
+          "status": {"type": "integer", "description": "状态码，200成功，500失败", "example": 200},
+          "msg": {"type": "string", "description": "响应消息", "example": "操作成功!"},
+          "obj": {"type": "object", "description": "响应数据", "nullable": true}
+        }
+      },
+      "RespBeanWithHr": {
+        "type": "object",
+        "description": "带HR信息的响应对象",
+        "properties": {
+          "status": {"type": "integer", "example": 200},
+          "msg": {"type": "string", "example": "登录成功!"},
+          "obj": {"$ref": "#/components/schemas/Hr"}
+        }
+      },
+      "RespBeanWithDepartment": {
+        "type": "object",
+        "description": "带部门信息的响应对象",
+        "properties": {
+          "status": {"type": "integer", "example": 200},
+          "msg": {"type": "string", "example": "添加成功"},
+          "obj": {"$ref": "#/components/schemas/Department"}
+        }
+      },
+      "RespPageBean": {
+        "type": "object",
+        "description": "分页响应对象",
+        "properties": {
+          "data": {"type": "array", "description": "数据列表", "items": {"type": "object"}},
+          "total": {"type": "integer", "description": "总记录数", "example": 100}
+        }
+      },
+      "Hr": {
+        "type": "object",
+        "description": "HR用户对象",
+        "properties": {
+          "id": {"type": "integer", "description": "HR ID", "example": 3},
+          "name": {"type": "string", "description": "姓名", "example": "系统管理员"},
+          "phone": {"type": "string", "description": "手机号", "example": "18568887789"},
+          "telephone": {"type": "string", "description": "办公电话", "example": "029-82881234"},
+          "address": {"type": "string", "description": "联系地址", "example": "深圳南山"},
+          "enabled": {"type": "boolean", "description": "是否启用", "example": true},
+          "username": {"type": "string", "description": "用户名", "example": "admin"},
+          "password": {"type": "string", "description": "密码（输出时为null）", "example": null},
+          "userface": {"type": "string", "description": "头像URL", "example": "http://xxx.jpg"},
+          "remark": {"type": "string", "description": "备注", "nullable": true},
+          "roles": {"type": "array", "description": "角色列表", "items": {"$ref": "#/components/schemas/Role"}}
+        }
+      },
+      "Role": {
+        "type": "object",
+        "description": "角色对象",
+        "properties": {
+          "id": {"type": "integer", "description": "角色ID", "example": 1},
+          "name": {"type": "string", "description": "角色英文名（以ROLE_开头）", "example": "ROLE_admin"},
+          "nameZh": {"type": "string", "description": "角色中文名", "example": "系统管理员"}
+        }
+      },
+      "Employee": {
+        "type": "object",
+        "description": "员工对象",
+        "properties": {
+          "id": {"type": "integer", "description": "员工ID", "example": 1},
+          "name": {"type": "string", "description": "姓名（VARCHAR(10)）", "example": "江南一点雨"},
+          "gender": {"type": "string", "description": "性别（男/女）", "enum": ["男", "女"], "example": "男"},
+          "birthday": {"type": "string", "format": "date", "description": "出生日期", "example": "1990-01-01"},
+          "idCard": {"type": "string", "description": "身份证号（VARCHAR(18)）", "example": "610122199001011234"},
+          "wedlock": {"type": "string", "description": "婚姻状况", "enum": ["已婚", "未婚", "离异"], "example": "已婚"},
+          "nationId": {"type": "integer", "description": "民族ID", "example": 1},
+          "nativePlace": {"type": "string", "description": "籍贯", "example": "陕西"},
+          "politicId": {"type": "integer", "description": "政治面貌ID", "example": 13},
+          "email": {"type": "string", "description": "邮箱（VARCHAR(20)）", "example": "javaboy@qq.com"},
+          "phone": {"type": "string", "description": "电话号码（VARCHAR(11)）", "example": "18568887789"},
+          "address": {"type": "string", "description": "联系地址（VARCHAR(64)）", "example": "深圳市南山区"},
+          "departmentId": {"type": "integer", "description": "部门ID", "example": 78},
+          "jobLevelId": {"type": "integer", "description": "职称ID", "example": 9},
+          "posId": {"type": "integer", "description": "职位ID", "example": 29},
+          "engageForm": {"type": "string", "description": "聘用形式", "enum": ["劳动合同", "劳务合同"], "example": "劳动合同"},
+          "tiptopDegree": {"type": "string", "description": "最高学历", "enum": ["博士", "硕士", "本科", "大专", "高中", "初中", "小学", "其他"], "example": "本科"},
+          "specialty": {"type": "string", "description": "专业", "example": "计算机科学与技术"},
+          "school": {"type": "string", "description": "毕业院校", "example": "西安电子科技大学"},
+          "beginDate": {"type": "string", "format": "date", "description": "入职日期", "example": "2018-01-01"},
+          "workState": {"type": "string", "description": "在职状态", "enum": ["在职", "离职"], "example": "在职"},
+          "workID": {"type": "string", "description": "工号（VARCHAR(8)）", "example": "00000001"},
+          "contractTerm": {"type": "number", "description": "合同期限（年）", "example": 3.0},
+          "conversionTime": {"type": "string", "format": "date", "description": "转正日期", "example": "2018-04-01"},
+          "notWorkDate": {"type": "string", "format": "date", "description": "离职日期", "nullable": true},
+          "beginContract": {"type": "string", "format": "date", "description": "合同起始日期", "example": "2018-01-01"},
+          "endContract": {"type": "string", "format": "date", "description": "合同终止日期", "example": "2021-01-01"},
+          "workAge": {"type": "integer", "description": "工龄", "example": 6},
+          "nation": {"$ref": "#/components/schemas/Nation"},
+          "politicsstatus": {"$ref": "#/components/schemas/Politicsstatus"},
+          "department": {"$ref": "#/components/schemas/Department"},
+          "jobLevel": {"$ref": "#/components/schemas/JobLevel"},
+          "position": {"$ref": "#/components/schemas/Position"},
+          "salary": {"$ref": "#/components/schemas/Salary"}
+        }
+      },
+      "Nation": {
+        "type": "object",
+        "description": "民族对象",
+        "properties": {
+          "id": {"type": "integer", "description": "民族ID", "example": 1},
+          "name": {"type": "string", "description": "民族名称", "example": "汉族"}
+        }
+      },
+      "Politicsstatus": {
+        "type": "object",
+        "description": "政治面貌对象",
+        "properties": {
+          "id": {"type": "integer", "description": "政治面貌ID", "example": 1},
+          "name": {"type": "string", "description": "政治面貌名称", "example": "中共党员"}
+        }
+      },
+      "Department": {
+        "type": "object",
+        "description": "部门对象",
+        "properties": {
+          "id": {"type": "integer", "description": "部门ID", "example": 1},
+          "name": {"type": "string", "description": "部门名称（VARCHAR(32)）", "example": "股东会"},
+          "parentId": {"type": "integer", "description": "父部门ID（-1表示顶级）", "example": -1},
+          "depPath": {"type": "string", "description": "部门路径", "example": ".1"},
+          "enabled": {"type": "boolean", "description": "是否启用", "example": true},
+          "isParent": {"type": "boolean", "description": "是否是父部门", "example": true},
+          "children": {"type": "array", "description": "子部门列表", "items": {"$ref": "#/components/schemas/Department"}},
+          "result": {"type": "integer", "description": "操作结果（存储过程返回）", "example": 1}
+        }
+      },
+      "JobLevel": {
+        "type": "object",
+        "description": "职称等级对象",
+        "properties": {
+          "id": {"type": "integer", "description": "职称ID", "example": 9},
+          "name": {"type": "string", "description": "职称名称（VARCHAR(32)）", "example": "高级工程师"},
+          "titleLevel": {"type": "string", "description": "职称级别", "enum": ["正高级", "副高级", "中级", "初级", "员级"], "example": "正高级"},
+          "createDate": {"type": "string", "format": "date", "description": "创建日期", "example": "2018-01-11"},
+          "enabled": {"type": "boolean", "description": "是否启用", "example": true}
+        }
+      },
+      "Position": {
+        "type": "object",
+        "description": "职位对象",
+        "properties": {
+          "id": {"type": "integer", "description": "职位ID", "example": 29},
+          "name": {"type": "string", "description": "职位名称（VARCHAR(32)）", "example": "技术总监"},
+          "createDate": {"type": "string", "format": "date", "description": "创建日期", "example": "2018-01-11"},
+          "enabled": {"type": "boolean", "description": "是否启用", "example": true}
+        }
+      },
+      "Salary": {
+        "type": "object",
+        "description": "薪资账套对象",
+        "properties": {
+          "id": {"type": "integer", "description": "薪资账套ID", "example": 10},
+          "name": {"type": "string", "description": "账套名称（VARCHAR(32)）", "example": "研发部薪资账套"},
+          "basicSalary": {"type": "integer", "description": "基本工资", "example": 12000},
+          "bonus": {"type": "integer", "description": "奖金", "example": 5000},
+          "lunchSalary": {"type": "integer", "description": "午餐补助", "example": 800},
+          "trafficSalary": {"type": "integer", "description": "交通补助", "example": 500},
+          "allSalary": {"type": "integer", "description": "应发工资（计算字段）", "example": 18300},
+          "pensionBase": {"type": "integer", "description": "养老金基数", "example": 12000},
+          "pensionPer": {"type": "number", "format": "float", "description": "养老金比例", "example": 0.07},
+          "medicalBase": {"type": "integer", "description": "医疗保险基数", "example": 12000},
+          "medicalPer": {"type": "number", "format": "float", "description": "医疗保险比例", "example": 0.02},
+          "accumulationFundBase": {"type": "integer", "description": "公积金基数", "example": 12000},
+          "accumulationFundPer": {"type": "number", "format": "float", "description": "公积金比例", "example": 0.12},
+          "createDate": {"type": "string", "format": "date", "description": "创建日期", "example": "2018-01-01"}
+        }
+      },
+      "Menu": {
+        "type": "object",
+        "description": "菜单对象",
+        "properties": {
+          "id": {"type": "integer", "description": "菜单ID", "example": 1},
+          "url": {"type": "string", "description": "请求URL（用于权限匹配）", "example": "/"},
+          "path": {"type": "string", "description": "前端路由路径", "example": "/home"},
+          "component": {"type": "string", "description": "前端组件名", "example": "Home"},
+          "name": {"type": "string", "description": "菜单名称", "example": "所有"},
+          "iconCls": {"type": "string", "description": "图标类名", "example": "fa fa-user-circle-o"},
+          "meta": {"type": "object", "description": "元信息"},
+          "parentId": {"type": "integer", "description": "父菜单ID", "example": 1},
+          "enabled": {"type": "boolean", "description": "是否启用", "example": true},
+          "children": {"type": "array", "description": "子菜单列表", "items": {"$ref": "#/components/schemas/Menu"}}
+        }
+      }
+    }
+  }
+}
