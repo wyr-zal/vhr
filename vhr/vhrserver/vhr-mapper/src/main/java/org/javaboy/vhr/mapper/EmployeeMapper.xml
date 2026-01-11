@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<!--
+    Mapper命名空间：对应Java接口的全限定名，MyBatis通过该命名空间绑定接口与XML
+    所属接口：org.javaboy.vhr.mapper.EmployeeMapper
+-->
 <mapper namespace="org.javaboy.vhr.mapper.EmployeeMapper">
+
+    <!-- ====================== 结果映射配置 ====================== -->
+    <!--
+        基础结果映射：映射Employee实体的基本字段，不包含关联对象
+        id：结果映射唯一标识
+        type：映射的目标实体类全限定名
+    -->
     <resultMap id="BaseResultMap" type="org.javaboy.vhr.model.Employee">
+        <!-- id标签：映射主键字段 -->
         <id column="id" property="id" jdbcType="INTEGER"/>
+        <!-- result标签：映射普通字段，column为数据库列名，property为实体类属性名，jdbcType为数据库字段类型 -->
         <result column="name" property="name" jdbcType="VARCHAR"/>
         <result column="gender" property="gender" jdbcType="CHAR"/>
         <result column="birthday" property="birthday" jdbcType="DATE"/>
@@ -31,38 +47,45 @@
         <result column="endContract" property="endContract" jdbcType="DATE"/>
         <result column="workAge" property="workAge" jdbcType="INTEGER"/>
     </resultMap>
+
+    <!--
+        完整员工信息结果映射：继承BaseResultMap，并关联查询关联对象
+        extends：继承基础结果映射，避免重复配置
+        association：映射一对一关联对象，javaType指定关联对象的类型
+    -->
     <resultMap id="AllEmployeeInfo" type="org.javaboy.vhr.model.Employee" extends="BaseResultMap">
+        <!-- 关联民族信息 -->
         <association property="nation" javaType="org.javaboy.vhr.model.Nation">
             <id column="nid" property="id"/>
             <result column="nname" property="name"/>
         </association>
+        <!-- 关联政治面貌信息 -->
         <association property="politicsstatus" javaType="org.javaboy.vhr.model.Politicsstatus">
             <id column="pid" property="id"/>
             <result column="pname" property="name"/>
         </association>
+        <!-- 关联部门信息 -->
         <association property="department" javaType="org.javaboy.vhr.model.Department">
             <id column="did" property="id"/>
             <result column="dname" property="name"/>
         </association>
+        <!-- 关联职级信息 -->
         <association property="jobLevel" javaType="org.javaboy.vhr.model.JobLevel">
             <id column="jid" property="id"/>
             <result column="jname" property="name"/>
         </association>
+        <!-- 关联职位信息 -->
         <association property="position" javaType="org.javaboy.vhr.model.Position">
             <id column="posid" property="id"/>
             <result column="posname" property="name"/>
         </association>
     </resultMap>
-    <sql id="Base_Column_List">
-    id, name, gender, birthday, idCard, wedlock, nationId, nativePlace, politicId, email, 
-    phone, address, departmentId, jobLevelId, posId, engageForm, tiptopDegree, specialty, 
-    school, beginDate, workState, workID, contractTerm, conversionTime, notWorkDate, 
-    beginContract, endContract, workAge
-  </sql>
-    <select id="maxWorkID" resultType="java.lang.Integer">
-    select max(workID) from employee
-  </select>
+
+    <!--
+        员工+薪资信息结果映射：继承BaseResultMap，关联薪资和部门信息
+    -->
     <resultMap id="EmployeeWithSalary" type="org.javaboy.vhr.model.Employee" extends="BaseResultMap">
+        <!-- 关联薪资信息，字段别名加s前缀避免与员工字段冲突 -->
         <association property="salary" javaType="org.javaboy.vhr.model.Salary">
             <id column="sid" property="id" jdbcType="INTEGER"/>
             <result column="sbasicSalary" property="basicSalary" jdbcType="INTEGER"/>
@@ -79,65 +102,162 @@
             <result column="saccumulationFundPer" property="accumulationFundPer" jdbcType="REAL"/>
             <result column="sname" property="name" jdbcType="VARCHAR"/>
         </association>
+        <!-- 关联部门名称 -->
         <association property="department" javaType="org.javaboy.vhr.model.Department">
             <result column="dname" property="name"/>
         </association>
     </resultMap>
+
+    <!-- ====================== SQL片段 ====================== -->
+    <!--
+        基础字段列表：复用员工表的所有字段，避免重复编写
+        使用include标签引用该片段
+    -->
+    <sql id="Base_Column_List">
+        id, name, gender, birthday, idCard, wedlock, nationId, nativePlace, politicId, email,
+        phone, address, departmentId, jobLevelId, posId, engageForm, tiptopDegree, specialty,
+        school, beginDate, workState, workID, contractTerm, conversionTime, notWorkDate,
+        beginContract, endContract, workAge
+    </sql>
+
+    <!-- ====================== 查询操作 ====================== -->
+    <!--
+        查询最大工号：用于新增员工时生成唯一工号
+        resultType：返回值类型为Integer
+    -->
+    <select id="maxWorkID" resultType="java.lang.Integer">
+        select max(workID) from employee
+    </select>
+
+    <!--
+        分页查询员工+薪资信息：关联员工、薪资、部门表
+        resultMap：使用EmployeeWithSalary结果映射
+        参数：page(起始索引)、size(每页条数)
+    -->
     <select id="getEmployeeByPageWithSalary" resultMap="EmployeeWithSalary">
         SELECT e.*,d.`name` AS dname,s.`id` AS sid,s.`accumulationFundBase` AS
         saccumulationFundBase,s.`accumulationFundPer` AS saccumulationFundPer,s.`allSalary` AS
         sallSalary,s.`basicSalary` AS sbasicSalary,s.`bonus` AS sbonus,s.`createDate` AS screateDate,s.`lunchSalary` AS
         slunchSalary,s.`medicalBase` AS smedicalBase,s.`medicalPer` AS smedicalPer,s.`name` AS sname,s.`pensionBase` AS
-        spensionBase,s.`pensionPer` AS spensionPer,s.`trafficSalary` AS strafficSalary FROM employee e LEFT JOIN
-        empsalary es ON e.`id`=es.`eid` LEFT JOIN salary s ON es.`sid`=s.`id` LEFT JOIN department d ON
-        e.`departmentId`=d.`id`
+        spensionBase,s.`pensionPer` AS spensionPer,s.`trafficSalary` AS strafficSalary
+        FROM employee e
+        LEFT JOIN empsalary es ON e.`id`=es.`eid` # 员工id和员工-工资表的员工id
+        LEFT JOIN salary s ON es.`sid`=s.`id` # 员工工资表的工资id 和 工资id
+        LEFT JOIN department d ON e.`departmentId`=d.`id`
         order by e.id
+        <!-- 分页条件：仅当page和size不为null时生效 -->
         <if test="page !=null and size !=null">
             limit #{page},#{size}
         </if>
     </select>
-    <insert id="updateEmployeeSalaryById">
-        REPLACE INTO empsalary (eid,sid) VALUES(#{eid},#{sid})
-    </insert>
+
+    <!--
+        根据ID查询员工完整信息：关联民族、政治面貌、部门、职级、职位表
+        resultMap：使用AllEmployeeInfo结果映射
+        参数：id(员工ID)
+    -->
     <select id="getEmployeeById" resultMap="AllEmployeeInfo">
-        select e.*,p.`id` as pid,p.`name` as pname,n.`id` as nid,n.`name` as nname,d.`id` as did,d.`name` as
-        dname,j.`id` as jid,j.`name` as jname,pos.`id` as posid,pos.`name` as posname from employee e,nation
-        n,politicsstatus p,department d,joblevel j,position pos where e.`nationId`=n.`id` and e.`politicId`=p.`id` and
-        e.`departmentId`=d.`id` and e.`jobLevelId`=j.`id` and e.`posId`=pos.`id` and e.`id`=#{id}
+        select e.*,
+               p.`id` as pid,
+               p.`name` as pname,
+               n.`id` as nid,
+               n.`name` as nname,
+               d.`id` as did,
+               d.`name` as dname,
+               j.`id` as jid,
+               j.`name` as jname,
+               pos.`id` as posid,
+               pos.`name` as posname
+        from employee e,
+             nation n,
+             politicsstatus p,
+             department d,
+             joblevel j,
+             position pos
+        where e.`nationId`=n.`id`
+          and e.`politicId`=p.`id`
+          and e.`departmentId`=d.`id`
+          and e.`jobLevelId`=j.`id`
+          and e.`posId`=pos.`id`
+          and e.`id`=#{id}
     </select>
+
+    <!--
+        分页条件查询员工：支持多条件筛选+日期范围+分页
+        resultMap：使用AllEmployeeInfo结果映射
+        参数：
+            emp：员工查询条件对象(包含name、politicId、nationId等)
+            beginDateScope：入职日期范围数组[开始日期, 结束日期]
+            page：起始索引
+            size：每页条数
+    -->
     <select id="getEmployeeByPage" resultMap="AllEmployeeInfo">
-        select e.*,p.`id` as pid,p.`name` as pname,n.`id` as nid,n.`name` as nname,d.`id` as did,d.`name` as
-        dname,j.`id` as jid,j.`name` as jname,pos.`id` as posid,pos.`name` as posname from employee e,nation
-        n,politicsstatus p,department d,joblevel j,position pos where e.`nationId`=n.`id` and e.`politicId`=p.`id` and
-        e.`departmentId`=d.`id` and e.`jobLevelId`=j.`id` and e.`posId`=pos.`id`
+        select e.*,
+        p.`id` as pid,
+        p.`name` as pname,
+        n.`id` as nid,
+        n.`name` as nname,
+        d.`id` as did,
+        d.`name` as dname,
+        j.`id` as jid,
+        j.`name` as jname,
+        pos.`id` as posid,
+        pos.`name` as posname
+        from employee e,
+        nation n,
+        politicsstatus p,
+        department d,
+        joblevel j,
+        position pos
+        where e.`nationId`=n.`id`
+        and e.`politicId`=p.`id`
+        and e.`departmentId`=d.`id`
+        and e.`jobLevelId`=j.`id`
+        and e.`posId`=pos.`id`
+
+        <!-- 姓名模糊查询 -->
         <if test="emp.name !=null and emp.name!=''">
             and e.name like concat('%',#{emp.name},'%')
         </if>
+        <!-- 政治面貌筛选 -->
         <if test="emp.politicId !=null">
             and e.politicId =#{emp.politicId}
         </if>
+        <!-- 民族筛选 -->
         <if test="emp.nationId !=null">
             and e.nationId =#{emp.nationId}
         </if>
+        <!-- 部门筛选 -->
         <if test="emp.departmentId !=null">
             and e.departmentId =#{emp.departmentId}
         </if>
+        <!-- 职级筛选 -->
         <if test="emp.jobLevelId !=null">
             and e.jobLevelId =#{emp.jobLevelId}
         </if>
+        <!-- 聘用形式筛选 -->
         <if test="emp.engageForm !=null and emp.engageForm!=''">
             and e.engageForm =#{emp.engageForm}
         </if>
+        <!-- 职位筛选 -->
         <if test="emp.posId !=null">
             and e.posId =#{emp.posId}
         </if>
+        <!-- 入职日期范围筛选 -->
         <if test="beginDateScope !=null">
             and e.beginDate between #{beginDateScope[0]} and #{beginDateScope[1]}
         </if>
+        <!-- 分页条件 -->
         <if test="page !=null and size!=null">
             limit #{page},#{size}
         </if>
     </select>
+
+    <!--
+        查询符合条件的员工总数：用于分页计算总页数
+        resultType：返回值类型为Long(避免int溢出)
+        参数：与getEmployeeByPage一致
+    -->
     <select id="getTotal" resultType="java.lang.Long">
         select count(*) from employee e
         <where>
@@ -169,16 +289,35 @@
             </if>
         </where>
     </select>
+
+    <!--
+        根据主键查询员工基础信息：仅返回员工表自身字段
+        parameterType：参数类型为Integer
+        resultMap：使用BaseResultMap
+    -->
     <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer">
         select
         <include refid="Base_Column_List"/>
         from employee
         where id = #{id,jdbcType=INTEGER}
     </select>
+
+    <!-- ====================== 删除操作 ====================== -->
+    <!--
+        根据主键删除员工
+        parameterType：参数类型为Integer
+    -->
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
-    delete from employee
-    where id = #{id,jdbcType=INTEGER}
-  </delete>
+        delete from employee
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+
+    <!-- ====================== 新增操作 ====================== -->
+    <!--
+        批量新增员工：一次性插入多条员工记录
+        参数：list(员工对象列表)
+        foreach：遍历列表，separator指定多条记录的分隔符，item为遍历项别名
+    -->
     <insert id="addEmps">
         insert into employee (name, gender,
         birthday, idCard, wedlock, nationId,
@@ -205,31 +344,44 @@
             )
         </foreach>
     </insert>
+
+    <!--
+        新增单个员工：全字段插入(包含id)
+        parameterType：参数类型为Employee实体类
+    -->
     <insert id="insert" parameterType="org.javaboy.vhr.model.Employee">
-    insert into employee (id, name, gender, 
-      birthday, idCard, wedlock, nationId, 
-      nativePlace, politicId, email, 
-      phone, address, departmentId, 
-      jobLevelId, posId, engageForm, 
-      tiptopDegree, specialty, school, 
-      beginDate, workState, workID, 
-      contractTerm, conversionTime, notWorkDate, 
-      beginContract, endContract, workAge
-      )
-    values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{gender,jdbcType=CHAR}, 
-      #{birthday,jdbcType=DATE}, #{idCard,jdbcType=CHAR}, #{wedlock,jdbcType=CHAR}, #{nationId,jdbcType=INTEGER}, 
-      #{nativePlace,jdbcType=VARCHAR}, #{politicId,jdbcType=INTEGER}, #{email,jdbcType=VARCHAR}, 
-      #{phone,jdbcType=VARCHAR}, #{address,jdbcType=VARCHAR}, #{departmentId,jdbcType=INTEGER}, 
-      #{jobLevelId,jdbcType=INTEGER}, #{posId,jdbcType=INTEGER}, #{engageForm,jdbcType=VARCHAR}, 
-      #{tiptopDegree,jdbcType=CHAR}, #{specialty,jdbcType=VARCHAR}, #{school,jdbcType=VARCHAR}, 
-      #{beginDate,jdbcType=DATE}, #{workState,jdbcType=CHAR}, #{workID,jdbcType=CHAR}, 
-      #{contractTerm,jdbcType=DOUBLE}, #{conversionTime,jdbcType=DATE}, #{notWorkDate,jdbcType=DATE}, 
-      #{beginContract,jdbcType=DATE}, #{endContract,jdbcType=DATE}, #{workAge,jdbcType=INTEGER}
-      )
-  </insert>
+        insert into employee (id, name, gender,
+                              birthday, idCard, wedlock, nationId,
+                              nativePlace, politicId, email,
+                              phone, address, departmentId,
+                              jobLevelId, posId, engageForm,
+                              tiptopDegree, specialty, school,
+                              beginDate, workState, workID,
+                              contractTerm, conversionTime, notWorkDate,
+                              beginContract, endContract, workAge
+        )
+        values (#{id,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{gender,jdbcType=CHAR},
+                #{birthday,jdbcType=DATE}, #{idCard,jdbcType=CHAR}, #{wedlock,jdbcType=CHAR}, #{nationId,jdbcType=INTEGER},
+                #{nativePlace,jdbcType=VARCHAR}, #{politicId,jdbcType=INTEGER}, #{email,jdbcType=VARCHAR},
+                #{phone,jdbcType=VARCHAR}, #{address,jdbcType=VARCHAR}, #{departmentId,jdbcType=INTEGER},
+                #{jobLevelId,jdbcType=INTEGER}, #{posId,jdbcType=INTEGER}, #{engageForm,jdbcType=VARCHAR},
+                #{tiptopDegree,jdbcType=CHAR}, #{specialty,jdbcType=VARCHAR}, #{school,jdbcType=VARCHAR},
+                #{beginDate,jdbcType=DATE}, #{workState,jdbcType=CHAR}, #{workID,jdbcType=CHAR},
+                #{contractTerm,jdbcType=DOUBLE}, #{conversionTime,jdbcType=DATE}, #{notWorkDate,jdbcType=DATE},
+                #{beginContract,jdbcType=DATE}, #{endContract,jdbcType=DATE}, #{workAge,jdbcType=INTEGER}
+               )
+    </insert>
+
+    <!--
+        选择性新增员工：仅插入非null字段，自动生成主键
+        parameterType：参数类型为Employee实体类
+        useGeneratedKeys：开启主键自动生成
+        keyProperty：指定主键对应的实体类属性名
+    -->
     <insert id="insertSelective" parameterType="org.javaboy.vhr.model.Employee" useGeneratedKeys="true"
             keyProperty="id">
         insert into employee
+        <!-- trim：动态拼接字段列表，suffixOverrides去除最后一个逗号 -->
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">
                 id,
@@ -403,6 +555,13 @@
             </if>
         </trim>
     </insert>
+
+    <!-- ====================== 更新操作 ====================== -->
+    <!--
+        选择性更新员工：仅更新非null字段
+        parameterType：参数类型为Employee实体类
+        set：动态拼接更新语句，自动去除最后一个逗号
+    -->
     <update id="updateByPrimaryKeySelective" parameterType="org.javaboy.vhr.model.Employee">
         update employee
         <set>
@@ -490,35 +649,50 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
+
+    <!--
+        全字段更新员工：更新所有字段(即使字段为null)
+        parameterType：参数类型为Employee实体类
+    -->
     <update id="updateByPrimaryKey" parameterType="org.javaboy.vhr.model.Employee">
-    update employee
-    set name = #{name,jdbcType=VARCHAR},
-      gender = #{gender,jdbcType=CHAR},
-      birthday = #{birthday,jdbcType=DATE},
-      idCard = #{idCard,jdbcType=CHAR},
-      wedlock = #{wedlock,jdbcType=CHAR},
-      nationId = #{nationId,jdbcType=INTEGER},
-      nativePlace = #{nativePlace,jdbcType=VARCHAR},
-      politicId = #{politicId,jdbcType=INTEGER},
-      email = #{email,jdbcType=VARCHAR},
-      phone = #{phone,jdbcType=VARCHAR},
-      address = #{address,jdbcType=VARCHAR},
-      departmentId = #{departmentId,jdbcType=INTEGER},
-      jobLevelId = #{jobLevelId,jdbcType=INTEGER},
-      posId = #{posId,jdbcType=INTEGER},
-      engageForm = #{engageForm,jdbcType=VARCHAR},
-      tiptopDegree = #{tiptopDegree,jdbcType=CHAR},
-      specialty = #{specialty,jdbcType=VARCHAR},
-      school = #{school,jdbcType=VARCHAR},
-      beginDate = #{beginDate,jdbcType=DATE},
-      workState = #{workState,jdbcType=CHAR},
-      workID = #{workID,jdbcType=CHAR},
-      contractTerm = #{contractTerm,jdbcType=DOUBLE},
-      conversionTime = #{conversionTime,jdbcType=DATE},
-      notWorkDate = #{notWorkDate,jdbcType=DATE},
-      beginContract = #{beginContract,jdbcType=DATE},
-      endContract = #{endContract,jdbcType=DATE},
-      workAge = #{workAge,jdbcType=INTEGER}
-    where id = #{id,jdbcType=INTEGER}
-  </update>
+        update employee
+        set name = #{name,jdbcType=VARCHAR},
+            gender = #{gender,jdbcType=CHAR},
+            birthday = #{birthday,jdbcType=DATE},
+            idCard = #{idCard,jdbcType=CHAR},
+            wedlock = #{wedlock,jdbcType=CHAR},
+            nationId = #{nationId,jdbcType=INTEGER},
+            nativePlace = #{nativePlace,jdbcType=VARCHAR},
+            politicId = #{politicId,jdbcType=INTEGER},
+            email = #{email,jdbcType=VARCHAR},
+            phone = #{phone,jdbcType=VARCHAR},
+            address = #{address,jdbcType=VARCHAR},
+            departmentId = #{departmentId,jdbcType=INTEGER},
+            jobLevelId = #{jobLevelId,jdbcType=INTEGER},
+            posId = #{posId,jdbcType=INTEGER},
+            engageForm = #{engageForm,jdbcType=VARCHAR},
+            tiptopDegree = #{tiptopDegree,jdbcType=CHAR},
+            specialty = #{specialty,jdbcType=VARCHAR},
+            school = #{school,jdbcType=VARCHAR},
+            beginDate = #{beginDate,jdbcType=DATE},
+            workState = #{workState,jdbcType=CHAR},
+            workID = #{workID,jdbcType=CHAR},
+            contractTerm = #{contractTerm,jdbcType=DOUBLE},
+            conversionTime = #{conversionTime,jdbcType=DATE},
+            notWorkDate = #{notWorkDate,jdbcType=DATE},
+            beginContract = #{beginContract,jdbcType=DATE},
+            endContract = #{endContract,jdbcType=DATE},
+            workAge = #{workAge,jdbcType=INTEGER}
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+
+    <!-- ====================== 其他操作 ====================== -->
+    <!--
+        更新员工薪资关联关系：使用REPLACE INTO实现"有则更新，无则插入"
+        参数：eid(员工ID)、sid(薪资ID)
+    -->
+    <insert id="updateEmployeeSalaryById">
+        REPLACE INTO empsalary (eid,sid) VALUES(#{eid},#{sid})
+    </insert>
+
 </mapper>

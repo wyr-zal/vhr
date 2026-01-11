@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="org.javaboy.vhr.mapper.MenuMapper" >
-  <resultMap id="BaseResultMap" type="org.javaboy.vhr.model.Menu" >
+
+<mapper namespace="org.javaboy.vhr.mapper.MenuMapper">
+
+  <!-- 基础结果映射，用于映射菜单数据 -->
+  <resultMap id="BaseResultMap" type="org.javaboy.vhr.model.Menu">
     <id column="id" property="id" jdbcType="INTEGER" />
     <result column="url" property="url" jdbcType="VARCHAR" />
     <result column="path" property="path" jdbcType="VARCHAR" />
@@ -15,6 +18,8 @@
       <result column="requireAuth" property="requireAuth" jdbcType="BIT" />
     </association>
   </resultMap>
+
+  <!-- 继承 BaseResultMap 的结果映射，用于映射子菜单（递归嵌套） -->
   <resultMap id="Menus2" type="org.javaboy.vhr.model.Menu" extends="BaseResultMap">
     <collection property="children" ofType="org.javaboy.vhr.model.Menu">
       <id column="id2" property="id" jdbcType="INTEGER" />
@@ -31,6 +36,8 @@
       </association>
     </collection>
   </resultMap>
+
+  <!-- 菜单与角色关联的结果映射 -->
   <resultMap id="MenuWithRole" type="org.javaboy.vhr.model.Menu" extends="BaseResultMap">
     <collection property="roles" ofType="org.javaboy.vhr.model.Role">
       <id column="rid" property="id"/>
@@ -38,6 +45,8 @@
       <result column="rnameZh" property="nameZh"/>
     </collection>
   </resultMap>
+
+  <!-- 显示菜单及其子菜单的结果映射 -->
   <resultMap id="MenuWithChildren" type="org.javaboy.vhr.model.Menu" extends="BaseResultMap">
     <id column="id1" property="id"/>
     <result column="name1" property="name"/>
@@ -50,152 +59,127 @@
       </collection>
     </collection>
   </resultMap>
+
+  <!-- 获取某个角色的菜单ID -->
   <select id="getMidsByRid" resultType="java.lang.Integer">
     select mid from menu_role where rid=#{rid};
   </select>
+
+  <!-- 获取所有菜单及其子菜单 -->
   <select id="getAllMenus" resultMap="MenuWithChildren">
-    select m1.`id` as id1,m1.`name` as name1,m2.`id` as id2,m2.`name` as name2,m3.`id` as id3,m3.`name` as name3 from menu m1,menu m2,menu m3 where m1.`id`=m2.`parentId` and m2.`id`=m3.`parentId` and m3.`enabled`=true order by m1.`id`,m2.`id`,m3.`id`
+    select m1.`id` as id1, m1.`name` as name1, m2.`id` as id2, m2.`name` as name2,
+           m3.`id` as id3, m3.`name` as name3
+    from menu m1, menu m2, menu m3
+    where m1.`id`=m2.`parentId` and m2.`id`=m3.`parentId` and m3.`enabled`=true
+    order by m1.`id`, m2.`id`, m3.`id`
   </select>
+
+  <!-- 获取所有菜单及其角色 -->
   <select id="getAllMenusWithRole" resultMap="MenuWithRole">
-    select m.*,r.`id` as rid,r.`name` as rname,r.`nameZh` as rnameZh from menu m,menu_role mr,role r where m.`id`=mr.`mid` and mr.`rid`=r.`id` order by m.`id`
+    select m.*, r.`id` as rid, r.`name` as rname, r.`nameZh` as rnameZh
+    from menu m, menu_role mr, role r
+    where m.`id`=mr.`mid` and mr.`rid`=r.`id`
+    order by m.`id`
   </select>
+
+  <!-- 根据hrid获取菜单及子菜单 -->
   <select id="getMenusByHrId" resultMap="Menus2">
-    select distinct m1.*,m2.`id` as id2,m2.`component` as component2,m2.`enabled` as enabled2,m2.`iconCls` as iconCls2,m2.`keepAlive` as keepAlive2,m2.`name` as name2,m2.`parentId` as parentId2,m2.`requireAuth` as requireAuth2,m2.`path` as path2 from menu m1,menu m2,hr_role hrr,menu_role mr where m1.`id`=m2.`parentId` and hrr.`hrid`=#{hrid} and hrr.`rid`=mr.`rid` and mr.`mid`=m2.`id` and m2.`enabled`=true order by m1.`id`,m2.`id`
+    select distinct m1.*, m2.`id` as id2, m2.`component` as component2, m2.`enabled` as enabled2,
+                    m2.`iconCls` as iconCls2, m2.`keepAlive` as keepAlive2, m2.`name` as name2,
+                    m2.`parentId` as parentId2, m2.`requireAuth` as requireAuth2, m2.`path` as path2
+    from menu m1, menu m2, hr_role hrr, menu_role mr
+    where m1.`id`=m2.`parentId` and hrr.`hrid`=#{hrid}
+      and hrr.`rid`=mr.`rid` and mr.`mid`=m2.`id` and m2.`enabled`=true
+    order by m1.`id`, m2.`id`
   </select>
-  <sql id="Base_Column_List" >
+
+  <!-- 基础列列表 -->
+  <sql id="Base_Column_List">
     id, url, path, component, name, iconCls, keepAlive, requireAuth, parentId, enabled
   </sql>
-  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
-    select 
+
+  <!-- 根据ID查询菜单 -->
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+    select
     <include refid="Base_Column_List" />
     from menu
     where id = #{id,jdbcType=INTEGER}
   </select>
-  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+
+  <!-- 根据ID删除菜单 -->
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
     delete from menu
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <insert id="insert" parameterType="org.javaboy.vhr.model.Menu" >
-    insert into menu (id, url, path, 
-      component, name, iconCls, 
-      keepAlive, requireAuth, parentId, 
-      enabled)
-    values (#{id,jdbcType=INTEGER}, #{url,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR}, 
-      #{component,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{iconcls,jdbcType=VARCHAR}, 
-      #{keepalive,jdbcType=BIT}, #{requireauth,jdbcType=BIT}, #{parentid,jdbcType=INTEGER}, 
-      #{enabled,jdbcType=BIT})
+
+  <!-- 插入菜单 -->
+  <insert id="insert" parameterType="org.javaboy.vhr.model.Menu">
+    insert into menu (id, url, path, component, name, iconCls, keepAlive, requireAuth, parentId, enabled)
+    values (#{id,jdbcType=INTEGER}, #{url,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR},
+            #{component,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{iconcls,jdbcType=VARCHAR},
+            #{keepalive,jdbcType=BIT}, #{requireauth,jdbcType=BIT}, #{parentid,jdbcType=INTEGER},
+            #{enabled,jdbcType=BIT})
   </insert>
-  <insert id="insertSelective" parameterType="org.javaboy.vhr.model.Menu" >
+
+  <!-- 插入菜单（选择性插入） -->
+  <insert id="insertSelective" parameterType="org.javaboy.vhr.model.Menu">
     insert into menu
-    <trim prefix="(" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        id,
-      </if>
-      <if test="url != null" >
-        url,
-      </if>
-      <if test="path != null" >
-        path,
-      </if>
-      <if test="component != null" >
-        component,
-      </if>
-      <if test="name != null" >
-        name,
-      </if>
-      <if test="iconcls != null" >
-        iconCls,
-      </if>
-      <if test="keepalive != null" >
-        keepAlive,
-      </if>
-      <if test="requireauth != null" >
-        requireAuth,
-      </if>
-      <if test="parentid != null" >
-        parentId,
-      </if>
-      <if test="enabled != null" >
-        enabled,
-      </if>
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="id != null">id,</if>
+      <if test="url != null">url,</if>
+      <if test="path != null">path,</if>
+      <if test="component != null">component,</if>
+      <if test="name != null">name,</if>
+      <if test="iconcls != null">iconCls,</if>
+      <if test="keepalive != null">keepAlive,</if>
+      <if test="requireauth != null">requireAuth,</if>
+      <if test="parentid != null">parentId,</if>
+      <if test="enabled != null">enabled,</if>
     </trim>
-    <trim prefix="values (" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        #{id,jdbcType=INTEGER},
-      </if>
-      <if test="url != null" >
-        #{url,jdbcType=VARCHAR},
-      </if>
-      <if test="path != null" >
-        #{path,jdbcType=VARCHAR},
-      </if>
-      <if test="component != null" >
-        #{component,jdbcType=VARCHAR},
-      </if>
-      <if test="name != null" >
-        #{name,jdbcType=VARCHAR},
-      </if>
-      <if test="iconcls != null" >
-        #{iconcls,jdbcType=VARCHAR},
-      </if>
-      <if test="keepalive != null" >
-        #{keepalive,jdbcType=BIT},
-      </if>
-      <if test="requireauth != null" >
-        #{requireauth,jdbcType=BIT},
-      </if>
-      <if test="parentid != null" >
-        #{parentid,jdbcType=INTEGER},
-      </if>
-      <if test="enabled != null" >
-        #{enabled,jdbcType=BIT},
-      </if>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="id != null">#{id,jdbcType=INTEGER},</if>
+      <if test="url != null">#{url,jdbcType=VARCHAR},</if>
+      <if test="path != null">#{path,jdbcType=VARCHAR},</if>
+      <if test="component != null">#{component,jdbcType=VARCHAR},</if>
+      <if test="name != null">#{name,jdbcType=VARCHAR},</if>
+      <if test="iconcls != null">#{iconcls,jdbcType=VARCHAR},</if>
+      <if test="keepalive != null">#{keepalive,jdbcType=BIT},</if>
+      <if test="requireauth != null">#{requireauth,jdbcType=BIT},</if>
+      <if test="parentid != null">#{parentid,jdbcType=INTEGER},</if>
+      <if test="enabled != null">#{enabled,jdbcType=BIT},</if>
     </trim>
   </insert>
-  <update id="updateByPrimaryKeySelective" parameterType="org.javaboy.vhr.model.Menu" >
+
+  <!-- 根据主键更新菜单（选择性更新） -->
+  <update id="updateByPrimaryKeySelective" parameterType="org.javaboy.vhr.model.Menu">
     update menu
-    <set >
-      <if test="url != null" >
-        url = #{url,jdbcType=VARCHAR},
-      </if>
-      <if test="path != null" >
-        path = #{path,jdbcType=VARCHAR},
-      </if>
-      <if test="component != null" >
-        component = #{component,jdbcType=VARCHAR},
-      </if>
-      <if test="name != null" >
-        name = #{name,jdbcType=VARCHAR},
-      </if>
-      <if test="iconcls != null" >
-        iconCls = #{iconcls,jdbcType=VARCHAR},
-      </if>
-      <if test="keepalive != null" >
-        keepAlive = #{keepalive,jdbcType=BIT},
-      </if>
-      <if test="requireauth != null" >
-        requireAuth = #{requireauth,jdbcType=BIT},
-      </if>
-      <if test="parentid != null" >
-        parentId = #{parentid,jdbcType=INTEGER},
-      </if>
-      <if test="enabled != null" >
-        enabled = #{enabled,jdbcType=BIT},
-      </if>
+    <set>
+      <if test="url != null">url = #{url,jdbcType=VARCHAR},</if>
+      <if test="path != null">path = #{path,jdbcType=VARCHAR},</if>
+      <if test="component != null">component = #{component,jdbcType=VARCHAR},</if>
+      <if test="name != null">name = #{name,jdbcType=VARCHAR},</if>
+      <if test="iconcls != null">iconCls = #{iconcls,jdbcType=VARCHAR},</if>
+      <if test="keepalive != null">keepAlive = #{keepalive,jdbcType=BIT},</if>
+      <if test="requireauth != null">requireAuth = #{requireauth,jdbcType=BIT},</if>
+      <if test="parentid != null">parentId = #{parentid,jdbcType=INTEGER},</if>
+      <if test="enabled != null">enabled = #{enabled,jdbcType=BIT},</if>
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="org.javaboy.vhr.model.Menu" >
+
+  <!-- 根据主键更新菜单 -->
+  <update id="updateByPrimaryKey" parameterType="org.javaboy.vhr.model.Menu">
     update menu
     set url = #{url,jdbcType=VARCHAR},
-      path = #{path,jdbcType=VARCHAR},
-      component = #{component,jdbcType=VARCHAR},
-      name = #{name,jdbcType=VARCHAR},
-      iconCls = #{iconcls,jdbcType=VARCHAR},
-      keepAlive = #{keepalive,jdbcType=BIT},
-      requireAuth = #{requireauth,jdbcType=BIT},
-      parentId = #{parentid,jdbcType=INTEGER},
-      enabled = #{enabled,jdbcType=BIT}
+        path = #{path,jdbcType=VARCHAR},
+        component = #{component,jdbcType=VARCHAR},
+        name = #{name,jdbcType=VARCHAR},
+        iconCls = #{iconcls,jdbcType=VARCHAR},
+        keepAlive = #{keepalive,jdbcType=BIT},
+        requireAuth = #{requireauth,jdbcType=BIT},
+        parentId = #{parentid,jdbcType=INTEGER},
+        enabled = #{enabled,jdbcType=BIT}
     where id = #{id,jdbcType=INTEGER}
   </update>
+
 </mapper>
