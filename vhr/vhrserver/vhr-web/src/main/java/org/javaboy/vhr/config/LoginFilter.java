@@ -23,12 +23,6 @@ import java.util.Map;
  * 1. 支持JSON格式的登录参数（适配前后端分离项目，默认仅支持表单提交）
  * 2. 增加登录验证码校验逻辑
  * 3. 注册用户会话信息到SessionRegistry，支持并发登录控制
- * @作者 江南一点雨
- * @微信公众号 江南一点雨
- * @网站 http://www.javaboy.org
- * @微信 a_java_boy
- * @GitHub https://github.com/lenve
- * @Gitee https://gitee.com/lenve
  */
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
@@ -125,13 +119,13 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     public void checkCode(HttpServletResponse resp, String code, String verify_code) {
         // TODO: 开发环境临时跳过验证码校验，生产环境请删除此行
         // 开发时输入code=dev即可绕过验证码，方便调试
-        if (code != null && "dev".equalsIgnoreCase(code)) return;
+        if ("dev".equalsIgnoreCase(code)) return;
 
         // 验证码校验逻辑：
         // 1. 前端传入的code为空 或 Session中的验证码为空
         // 2. code为空字符串 或 大小写不匹配
-        if (code == null || verify_code == null || "".equals(code) ||
-                !verify_code.toLowerCase().equals(code.toLowerCase())) {
+        if (verify_code == null || "".equals(code) ||
+                !verify_code.equalsIgnoreCase(code)) {
             // 抛出认证服务异常，框架会捕获并触发登录失败处理器
             throw new AuthenticationServiceException("验证码不正确");
         }
