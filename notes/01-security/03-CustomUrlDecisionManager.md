@@ -208,3 +208,15 @@ public class CustomUrlDecisionManager implements AccessDecisionManager {
 | `GrantedAuthority` | 用户拥有的权限/角色 |
 | `AnonymousAuthenticationToken` | 匿名用户的认证令牌（未登录状态） |
 | `AccessDeniedException` | 访问被拒绝异常，会被 Security 异常处理器捕获 |
+
+
+| 接口 |角色定位 |
+|------|-----|
+Authentication	| 我是谁 & 我有什么权限
+GrantedAuthority |	我拥有的单个权限
+ConfigAttribute	|访问资源需要什么权限
+
+### 👉 一句话先记住：
+
+Authentication 里装的是 GrantedAuthority，
+ConfigAttribute 定义的是“门槛”

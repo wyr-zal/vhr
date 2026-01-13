@@ -35,6 +35,9 @@ cd vhr/vhrserver/vhr-web && mvn spring-boot:run
 
 # 运行邮件服务
 cd vhr/mailserver && mvn spring-boot:run
+
+# 运行测试
+cd vhr && mvn test
 ```
 
 ### 前端构建与运行
@@ -106,11 +109,11 @@ npm run build
 
 | 功能 | 路径 |
 |------|------|
-| Spring Security配置 | `vhr/vhrserver/vhr-web/.../config/SecurityConfig.java` |
-| 员工管理Controller | `vhr/vhrserver/vhr-web/.../controller/emp/EmpBasicController.java` |
-| 员工服务(含Excel导入导出) | `vhr/vhrserver/vhr-service/.../service/EmployeeService.java` |
-| 菜单Mapper | `vhr/vhrserver/vhr-mapper/.../mapper/MenuMapper.xml` |
-| 邮件接收处理 | `vhr/mailserver/.../receiver/MailReceiver.java` |
+| Spring Security配置 | `vhr/vhrserver/vhr-web/src/main/java/org/javaboy/vhr/config/SecurityConfig.java` |
+| 员工管理Controller | `vhr/vhrserver/vhr-web/src/main/java/org/javaboy/vhr/controller/emp/EmpBasicController.java` |
+| 员工服务(含Excel导入导出) | `vhr/vhrserver/vhr-service/src/main/java/org/javaboy/vhr/service/EmployeeService.java` |
+| 菜单Mapper | `vhr/vhrserver/vhr-mapper/src/main/resources/org/javaboy/vhr/mapper/MenuMapper.xml` |
+| 邮件接收处理 | `vhr/mailserver/src/main/java/org/javaboy/mailserver/receiver/MailReceiver.java` |
 | 前端路由守卫 | `vuehr/src/main.js` |
 | 动态菜单加载 | `vuehr/src/utils/menus.js` |
 | Axios请求封装 | `vuehr/src/utils/api.js` |
